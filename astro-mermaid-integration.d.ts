@@ -26,6 +26,26 @@ export interface AstroMermaidOptions {
   autoTheme?: boolean;
   
   /**
+   * Enable server-side rendering of mermaid diagrams
+   * Requires jsdom: npm install jsdom
+   * @default false
+   */
+  ssr?: boolean;
+  
+  /**
+   * Limit SSR to specific diagram types. If empty, all diagrams are rendered server-side.
+   * @default []
+   * @example ['flowchart', 'sequence', 'gantt']
+   */
+  ssrDiagrams?: string[];
+  
+  /**
+   * Timeout for SSR rendering in milliseconds
+   * @default 10000
+   */
+  timeout?: number;
+  
+  /**
    * Additional mermaid configuration options
    * @see https://mermaid.js.org/config/setup/modules/mermaidAPI.html#mermaidapi-configuration-defaults
    */
@@ -47,9 +67,9 @@ export interface AstroMermaidOptions {
 }
 
 /**
- * Astro integration for rendering Mermaid diagrams
+ * Astro integration for rendering Mermaid diagrams with client-side and server-side rendering support
  * 
- * @example
+ * @example Basic usage (client-side only)
  * ```js
  * import { defineConfig } from 'astro/config';
  * import mermaid from 'astro-mermaid';
@@ -59,6 +79,24 @@ export interface AstroMermaidOptions {
  *     mermaid({
  *       theme: 'forest',
  *       autoTheme: true
+ *     })
+ *   ]
+ * });
+ * ```
+ * 
+ * @example SSR configuration
+ * ```js
+ * // First install jsdom: npm install jsdom
+ * import { defineConfig } from 'astro/config';
+ * import mermaid from 'astro-mermaid';
+ * 
+ * export default defineConfig({
+ *   integrations: [
+ *     mermaid({
+ *       ssr: true,  // Requires jsdom for DOM environment
+ *       ssrDiagrams: ['flowchart', 'sequence', 'gantt'],
+ *       timeout: 5000,
+ *       theme: 'forest'
  *     })
  *   ]
  * });

@@ -1,6 +1,6 @@
 # astro-mermaid
 
-An Astro integration for rendering Mermaid diagrams with automatic theme switching, client-side rendering, and universal compatibility. Works seamlessly with both standalone Astro projects and documentation frameworks like Starlight.
+An Astro integration for rendering Mermaid diagrams with automatic theme switching, client-side rendering, server-side rendering support, and universal compatibility. Works seamlessly with both standalone Astro projects and documentation frameworks like Starlight.
 
 ## Live Demos
 
@@ -28,6 +28,7 @@ Both demos showcase:
 - 🔒 **Privacy-Focused** - No external dependencies, fully offline-capable
 - 📦 **Zero Configuration** - Works out of the box with sensible defaults
 - 🎭 **Smooth UX** - Loading animations and layout shift prevention
+- 🌟 **SSR Support** - Optional server-side rendering with graceful fallback
 
 ## Quick Start
 
@@ -85,6 +86,8 @@ export default defineConfig({
 
 ## Configuration
 
+### Basic Configuration (Client-Side Only)
+
 ```js
 mermaid({
   // Default theme: 'default', 'dark', 'forest', 'neutral', 'base'
@@ -112,6 +115,50 @@ mermaid({
     }
   ]
 })
+```
+
+### SSR Configuration (Experimental)
+
+Server-side rendering provides improved performance and reduced flickering by pre-rendering diagrams at build time.
+
+```js
+mermaid({
+  // Enable server-side rendering
+  ssr: true,
+  
+  // Limit SSR to specific diagram types (recommended for performance)
+  ssrDiagrams: ['flowchart', 'sequence', 'gantt'],
+  
+  // SSR timeout in milliseconds
+  timeout: 5000,
+  
+  // All other options work the same
+  theme: 'forest',
+  autoTheme: true
+})
+```
+
+#### SSR Benefits & Limitations
+
+**✅ Benefits:**
+- Faster initial page load with pre-rendered diagrams
+- Reduced layout shift and flickering
+- Better SEO and crawlability
+- Dual-theme support (light/dark variants generated)
+
+**⚠️ Limitations:**
+- **Requires JSDOM**: Install with `npm install jsdom` for SSR support
+- Requires Node.js environment with DOM support during build
+- Some complex diagram types may not render server-side
+- Gracefully falls back to client-side rendering on failure
+- Longer build times for sites with many diagrams
+
+**📦 Installation for SSR:**
+```bash
+npm install jsdom  # Required for server-side rendering
+```
+
+**💡 Recommendation:** Use selective SSR with `ssrDiagrams` for best performance balance.
 ```
 
 ## Icon Packs
@@ -207,7 +254,15 @@ All mermaid diagram types are supported:
 
 ## Version
 
-**Current:** `v1.0.4` - Enhanced universal compatibility with dual plugin system
+**Current:** `v1.1.0` - SSR support with factory pattern architecture and comprehensive testing
+
+### What's New in v1.1.0
+- ✨ **Server-Side Rendering**: Optional SSR support with graceful fallback
+- 🏗️ **Modular Architecture**: Factory pattern for clean plugin selection
+- 🧪 **Comprehensive Testing**: Full test suite with Vitest
+- 📋 **Selective SSR**: `ssrDiagrams` option for performance optimization
+- 🎯 **Enhanced TypeScript**: Complete type definitions for all options
+- 🔄 **Zero Breaking Changes**: 100% backward compatibility maintained
 
 See [changelog](https://github.com/joesaby/astro-mermaid/releases) for version history.
 
