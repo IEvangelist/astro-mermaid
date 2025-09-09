@@ -24,12 +24,15 @@ class SSRMermaidRenderer {
     }
 
     try {
+      // Set up DOM environment for SSR
+      await this.setupDOMEnvironment();
+      
       // Try to import mermaid for server-side use
       const mermaidModule = await import('mermaid');
       this.mermaidInstance = mermaidModule.default;
       
       if (this.logger) {
-        this.logger.info('Mermaid initialized for SSR');
+        this.logger.info('Mermaid initialized for SSR with DOM environment');
       }
       
       return this.mermaidInstance;
@@ -38,6 +41,45 @@ class SSRMermaidRenderer {
         this.logger.warn(`Failed to initialize mermaid for SSR: ${error.message}`);
       }
       throw new Error('Mermaid not available for SSR');
+    }
+  }
+
+  /**
+   * Set up DOM environment for server-side rendering
+   */
+  async setupDOMEnvironment() {
+    // Check if we're already in a DOM environment
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      return; // Already have DOM
+    }
+
+    try {
+      // Try to import jsdom for server-side DOM simulation
+      const { JSDOM } = await import('jsdom');
+      
+      // Create a minimal DOM environment
+      const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', {
+        pretendToBeVisual: true,
+        resources: 'usable'
+      });
+      
+      // Set global DOM variables that mermaid expects
+      global.window = dom.window;
+      global.document = dom.window.document;
+      global.navigator = dom.window.navigator;
+      global.HTMLElement = dom.window.HTMLElement;
+      global.SVGElement = dom.window.SVGElement;
+      
+      if (this.logger) {
+        this.logger.info('DOM environment set up for SSR using JSDOM');
+      }
+    } catch (error) {
+      // JSDOM not available, provide helpful error message
+      const errorMessage = error.code === 'ERR_MODULE_NOT_FOUND' && error.message.includes('jsdom')
+        ? 'SSR requires jsdom. Install with: npm install jsdom'
+        : `JSDOM setup failed: ${error.message}`;
+      
+      throw new Error(errorMessage);
     }
   }
 

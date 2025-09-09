@@ -27,6 +27,7 @@ export interface AstroMermaidOptions {
   
   /**
    * Enable server-side rendering of mermaid diagrams
+   * Requires jsdom: npm install jsdom
    * @default false
    */
   ssr?: boolean;
@@ -85,13 +86,14 @@ export interface AstroMermaidOptions {
  * 
  * @example SSR configuration
  * ```js
+ * // First install jsdom: npm install jsdom
  * import { defineConfig } from 'astro/config';
  * import mermaid from 'astro-mermaid';
  * 
  * export default defineConfig({
  *   integrations: [
  *     mermaid({
- *       ssr: true,
+ *       ssr: true,  // Requires jsdom for DOM environment
  *       ssrDiagrams: ['flowchart', 'sequence', 'gantt'],
  *       timeout: 5000,
  *       theme: 'forest'

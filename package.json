@@ -41,6 +41,9 @@
     "mdast-util-to-string": "^4.0.0",
     "unist-util-visit": "^5.0.0"
   },
+  "optionalDependencies": {
+    "jsdom": "^25.0.0"
+  },
   "devDependencies": {
     "@types/hast": "^3.0.4",
     "astro": "^5.0.0",

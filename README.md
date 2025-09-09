@@ -147,10 +147,16 @@ mermaid({
 - Dual-theme support (light/dark variants generated)
 
 **⚠️ Limitations:**
+- **Requires JSDOM**: Install with `npm install jsdom` for SSR support
 - Requires Node.js environment with DOM support during build
 - Some complex diagram types may not render server-side
 - Gracefully falls back to client-side rendering on failure
 - Longer build times for sites with many diagrams
+
+**📦 Installation for SSR:**
+```bash
+npm install jsdom  # Required for server-side rendering
+```
 
 **💡 Recommendation:** Use selective SSR with `ssrDiagrams` for best performance balance.
 ```
