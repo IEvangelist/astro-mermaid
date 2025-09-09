@@ -8,9 +8,9 @@ export default defineConfig({
   },
   integrations: [
     mermaid({
-      // ssr: true, // SSR mode - requires jsdom for DOM environment
-      // ssrDiagrams: ['flowchart', 'sequence', 'gantt', 'class', 'state'], // Selective SSR
-      // timeout: 5000, // SSR timeout
+      ssr: true, // SSR mode - now with enhanced JSDOM support
+      ssrDiagrams: ['flowchart', 'sequence', 'gantt'], // Selective SSR for best performance
+      timeout: 10000, // SSR timeout
       theme: "forest",
       autoTheme: true,
       mermaidConfig: {

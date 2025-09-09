@@ -57,7 +57,7 @@ class SSRMermaidRenderer {
       // Try to import jsdom for server-side DOM simulation
       const { JSDOM } = await import('jsdom');
       
-      // Create a minimal DOM environment
+      // Create a minimal DOM environment with enhanced APIs
       const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', {
         pretendToBeVisual: true,
         resources: 'usable'
@@ -70,8 +70,29 @@ class SSRMermaidRenderer {
       global.HTMLElement = dom.window.HTMLElement;
       global.SVGElement = dom.window.SVGElement;
       
+      // Add missing SVG methods that mermaid requires
+      const createSVGMethod = (methodName, returnValue) => {
+        if (!global.SVGElement.prototype[methodName]) {
+          global.SVGElement.prototype[methodName] = function() { return returnValue; };
+        }
+      };
+      
+      // Mock getBBox method for SVG text elements
+      createSVGMethod('getBBox', { x: 0, y: 0, width: 100, height: 20 });
+      createSVGMethod('getBoundingClientRect', { x: 0, y: 0, width: 100, height: 20, top: 0, left: 0, bottom: 20, right: 100 });
+      createSVGMethod('getComputedTextLength', 100);
+      
+      // Mock additional methods if needed
+      if (!global.window.getComputedStyle) {
+        global.window.getComputedStyle = () => ({
+          getPropertyValue: () => '',
+          fontSize: '16px',
+          fontFamily: 'Arial'
+        });
+      }
+      
       if (this.logger) {
-        this.logger.info('DOM environment set up for SSR using JSDOM');
+        this.logger.info('DOM environment set up for SSR using JSDOM with enhanced SVG support');
       }
     } catch (error) {
       // JSDOM not available, provide helpful error message
