@@ -343,6 +343,58 @@ export function generateMermaidCSS() {
         background-color: rgba(0, 0, 0, 0.02);
         border-radius: 0.5rem;
       }
+      
+      /* SSR Container Styles */
+      .mermaid-ssr-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 2rem 0;
+        padding: 1rem;
+        background-color: transparent;
+        border: none;
+        overflow: auto;
+        position: relative;
+      }
+      
+      .mermaid-ssr-container svg {
+        max-width: 100%;
+        height: auto;
+      }
+      
+      /* SSR theme variants */
+      .mermaid-ssr-light,
+      .mermaid-ssr-dark {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      /* SSR responsive design */
+      @media (prefers-color-scheme: dark) {
+        .mermaid-ssr-container {
+          background-color: rgba(255, 255, 255, 0.02);
+          border-radius: 0.5rem;
+        }
+      }
+      
+      @media (prefers-color-scheme: light) {
+        .mermaid-ssr-container {
+          background-color: rgba(0, 0, 0, 0.02);
+          border-radius: 0.5rem;
+        }
+      }
+      
+      [data-theme="dark"] .mermaid-ssr-container {
+        background-color: rgba(255, 255, 255, 0.02);
+        border-radius: 0.5rem;
+      }
+      
+      [data-theme="light"] .mermaid-ssr-container {
+        background-color: rgba(0, 0, 0, 0.02);
+        border-radius: 0.5rem;
+      }
     \`;
     document.head.appendChild(style);
   `;

@@ -12,6 +12,33 @@ class SSRMermaidRenderer {
     this.logger = options.logger;
     this.theme = options.theme || 'default';
     this.mermaidConfig = options.mermaidConfig || {};
+    this.mermaidInstance = null;
+  }
+
+  /**
+   * Initialize mermaid for server-side rendering
+   */
+  async initMermaid() {
+    if (this.mermaidInstance) {
+      return this.mermaidInstance;
+    }
+
+    try {
+      // Try to import mermaid for server-side use
+      const mermaidModule = await import('mermaid');
+      this.mermaidInstance = mermaidModule.default;
+      
+      if (this.logger) {
+        this.logger.info('Mermaid initialized for SSR');
+      }
+      
+      return this.mermaidInstance;
+    } catch (error) {
+      if (this.logger) {
+        this.logger.warn(`Failed to initialize mermaid for SSR: ${error.message}`);
+      }
+      throw new Error('Mermaid not available for SSR');
+    }
   }
 
   /**
@@ -22,38 +49,55 @@ class SSRMermaidRenderer {
    */
   async renderDiagram(diagramContent, theme = this.theme) {
     try {
-      // Import mermaid dynamically (only available in Node.js during build)
-      const { default: mermaid } = await import('mermaid');
+      const mermaid = await this.initMermaid();
       
       // Configure mermaid for SSR
       const baseConfig = {
         startOnLoad: false,
         securityLevel: 'loose',
+        theme: theme,
         ...this.mermaidConfig
       };
 
-      // Render light theme version
-      mermaid.initialize({
-        ...baseConfig,
-        theme: theme === 'dark' ? 'default' : theme
-      });
-
+      // Generate unique IDs
       const lightId = 'mermaid-light-' + Math.random().toString(36).slice(2, 11);
-      const { svg: lightSvg } = await mermaid.render(lightId, diagramContent);
-
-      // Render dark theme version
-      mermaid.initialize({
-        ...baseConfig,
-        theme: 'dark'
-      });
-
       const darkId = 'mermaid-dark-' + Math.random().toString(36).slice(2, 11);
-      const { svg: darkSvg } = await mermaid.render(darkId, diagramContent);
 
-      return {
-        light: lightSvg,
-        dark: darkSvg
-      };
+      let lightSvg, darkSvg;
+
+      try {
+        // Render light theme version
+        mermaid.initialize({
+          ...baseConfig,
+          theme: theme === 'dark' ? 'default' : theme
+        });
+
+        const lightResult = await mermaid.render(lightId, diagramContent);
+        lightSvg = lightResult.svg;
+
+        // Render dark theme version
+        mermaid.initialize({
+          ...baseConfig,
+          theme: 'dark'
+        });
+
+        const darkResult = await mermaid.render(darkId, diagramContent);
+        darkSvg = darkResult.svg;
+
+        if (this.logger) {
+          this.logger.info(`SSR rendered diagram successfully (${lightId})`);
+        }
+
+        return {
+          light: lightSvg,
+          dark: darkSvg
+        };
+      } catch (renderError) {
+        if (this.logger) {
+          this.logger.warn(`SSR mermaid render failed: ${renderError.message}`);
+        }
+        throw renderError;
+      }
     } catch (error) {
       if (this.logger) {
         this.logger.error(`SSR mermaid rendering failed: ${error.message}`);
@@ -70,14 +114,14 @@ class SSRMermaidRenderer {
    */
   createSSRHTML(svgs, originalContent) {
     return `
-<div class="mermaid-ssr-container">
-  <!-- Light theme SVG -->
-  <div class="mermaid-ssr-light" data-theme="light" style="display: none;">
+<div class="mermaid-ssr-container" data-ssr="true">
+  <!-- Light theme SVG (visible by default) -->
+  <div class="mermaid-ssr-light" data-theme-variant="light">
     ${svgs.light}
   </div>
   
-  <!-- Dark theme SVG -->  
-  <div class="mermaid-ssr-dark" data-theme="dark" style="display: none;">
+  <!-- Dark theme SVG (hidden by default) -->  
+  <div class="mermaid-ssr-dark" data-theme-variant="dark" style="display: none;">
     ${svgs.dark}
   </div>
   
@@ -85,48 +129,50 @@ class SSRMermaidRenderer {
   <div class="mermaid-fallback" style="display: none;">
     <pre class="mermaid">${originalContent}</pre>
   </div>
-  
-  <!-- SSR Theme switching script -->
-  <script>
-    (function() {
-      const container = document.currentScript.parentElement;
-      const lightDiv = container.querySelector('.mermaid-ssr-light');
-      const darkDiv = container.querySelector('.mermaid-ssr-dark');
-      const fallback = container.querySelector('.mermaid-fallback');
-      
-      function updateTheme() {
-        const htmlTheme = document.documentElement.getAttribute('data-theme');
-        const bodyTheme = document.body.getAttribute('data-theme');
-        const currentTheme = htmlTheme || bodyTheme || 'light';
-        
-        if (currentTheme === 'dark') {
-          lightDiv.style.display = 'none';
-          darkDiv.style.display = 'block';
-        } else {
-          lightDiv.style.display = 'block';
-          darkDiv.style.display = 'none';
-        }
-        
-        // Hide fallback since SSR worked
-        fallback.style.display = 'none';
-      }
-      
-      // Initialize theme
-      updateTheme();
-      
-      // Watch for theme changes
-      const observer = new MutationObserver(updateTheme);
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-theme']
-      });
-      observer.observe(document.body, {
-        attributes: true,
-        attributeFilter: ['data-theme']
-      });
-    })();
-  </script>
 </div>
+
+<script>
+(function() {
+  const container = document.currentScript.previousElementSibling;
+  const lightDiv = container.querySelector('.mermaid-ssr-light');
+  const darkDiv = container.querySelector('.mermaid-ssr-dark');
+  const fallback = container.querySelector('.mermaid-fallback');
+  
+  function updateSSRTheme() {
+    const htmlTheme = document.documentElement.getAttribute('data-theme');
+    const bodyTheme = document.body.getAttribute('data-theme');
+    const currentTheme = htmlTheme || bodyTheme;
+    
+    if (currentTheme === 'dark') {
+      lightDiv.style.display = 'none';
+      darkDiv.style.display = 'block';
+    } else {
+      lightDiv.style.display = 'block';
+      darkDiv.style.display = 'none';
+    }
+    
+    // Ensure fallback remains hidden since SSR worked
+    fallback.style.display = 'none';
+  }
+  
+  // Initialize theme
+  updateSSRTheme();
+  
+  // Watch for theme changes on both html and body
+  const observer = new MutationObserver(updateSSRTheme);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+  });
+  observer.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+  });
+  
+  // Handle view transitions
+  document.addEventListener('astro:after-swap', updateSSRTheme);
+})();
+</script>
 `;
   }
 }
@@ -156,21 +202,34 @@ function shouldRenderSSR(diagramContent, ssrDiagrams = []) {
 function getDiagramType(content) {
   const trimmed = content.trim().toLowerCase();
   
-  if (trimmed.startsWith('graph') || trimmed.startsWith('flowchart')) return 'flowchart';
+  // Flowcharts can start with 'graph', 'flowchart', or 'gitgraph'
+  if (trimmed.startsWith('graph ') || trimmed.startsWith('flowchart ')) return 'flowchart';
+  if (trimmed.startsWith('gitgraph')) return 'git';
+  
+  // Sequence diagrams
   if (trimmed.startsWith('sequencediagram') || trimmed.includes('participant')) return 'sequence';
+  
+  // Class diagrams
+  if (trimmed.startsWith('classdiagram')) return 'class';
+  
+  // State diagrams
+  if (trimmed.startsWith('statediagram')) return 'state';
+  
+  // Other diagram types
   if (trimmed.startsWith('gantt')) return 'gantt';
-  if (trimmed.startsWith('classDiagram')) return 'class';
-  if (trimmed.startsWith('stateDiagram')) return 'state';
-  if (trimmed.startsWith('erDiagram')) return 'er';
+  if (trimmed.startsWith('erdiagram')) return 'er';
   if (trimmed.startsWith('journey')) return 'journey';
-  if (trimmed.startsWith('gitGraph')) return 'git';
   if (trimmed.startsWith('pie')) return 'pie';
   if (trimmed.startsWith('requirement')) return 'requirement';
-  if (trimmed.startsWith('c4Context') || trimmed.startsWith('c4Container')) return 'c4';
+  if (trimmed.startsWith('c4context') || trimmed.startsWith('c4container')) return 'c4';
   if (trimmed.startsWith('mindmap')) return 'mindmap';
   if (trimmed.startsWith('timeline')) return 'timeline';
-  if (trimmed.startsWith('quadrantChart')) return 'quadrant';
+  if (trimmed.startsWith('quadrantchart')) return 'quadrant';
   if (trimmed.startsWith('architecture-beta')) return 'architecture';
+  if (trimmed.startsWith('block-beta')) return 'block';
+  if (trimmed.startsWith('xychart-beta')) return 'xychart';
+  if (trimmed.startsWith('sankey-beta')) return 'sankey';
+  if (trimmed.startsWith('packet-beta')) return 'packet';
   
   return 'unknown';
 }

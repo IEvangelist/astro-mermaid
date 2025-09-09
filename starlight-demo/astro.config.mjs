@@ -8,9 +8,9 @@ export default defineConfig({
   },
   integrations: [
     mermaid({
-      ssr: true, // Enable server-side rendering
-      ssrDiagrams: ['flowchart', 'sequence', 'gantt', 'class', 'state'], // Test more types
-      timeout: 5000, // SSR timeout
+      // ssr: true, // SSR mode - gracefully falls back to client-side when DOM not available
+      // ssrDiagrams: ['flowchart', 'sequence', 'gantt', 'class', 'state'], // Selective SSR
+      // timeout: 5000, // SSR timeout
       theme: "forest",
       autoTheme: true,
       mermaidConfig: {
